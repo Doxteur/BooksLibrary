@@ -32,18 +32,21 @@ export const BooksTable = ({
             <div className="font-medium">{book.title}</div>
           ),
           sortable: true,
+          filterable: true,
         },
         {
           header: "Auteur",
           accessor: "author",
           className: "hidden sm:table-cell",
           sortable: true,
+          filterable: true,
         },
         {
           header: "Année de publication",
           accessor: "publication_year",
           className: "hidden md:table-cell",
           sortable: true,
+          filterable: true,
         },
         {
           header: "Disponibilité",
@@ -59,6 +62,12 @@ export const BooksTable = ({
             </Badge>
           ),
           sortable: true,
+          filterable: true,
+          filterType: 'select',
+          filterOptions: [
+            { value: 'true', label: 'Disponible' },
+            { value: 'false', label: 'Emprunté' },
+          ],
         },
         {
           header: "Date d'ajout",

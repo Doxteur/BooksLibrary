@@ -9,6 +9,8 @@ import {
 } from "@/components/ui/table";
 import { ChevronUp, ChevronDown } from "lucide-react";
 import TablePagination from "@/components/shared/TablePagination";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface Column<T> {
   header: string;
@@ -16,6 +18,9 @@ interface Column<T> {
   cell?: (item: T) => React.ReactNode;
   className?: string;
   sortable?: boolean;
+  filterable?: boolean;
+  filterType?: 'text' | 'select';
+  filterOptions?: { value: string; label: string }[];
 }
 
 interface TableProps<T> {
@@ -42,6 +47,7 @@ function Table<T>({
 }: TableProps<T>) {
   const [sortColumn, setSortColumn] = useState<keyof T | null>(null);
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+  const [filters, setFilters] = useState<Record<string, string>>({});
 
   const handleSort = (column: keyof T) => {
     if (sortColumn === column) {
@@ -52,21 +58,76 @@ function Table<T>({
     }
   };
 
-  const sortedData = useMemo(() => {
-    if (!sortColumn) return data;
+  const handleFilterChange = (accessor: keyof T, value: string) => {
+    setFilters(prev => ({ ...prev, [accessor]: value }));
+  };
 
-    return [...data].sort((a, b) => {
-      const aValue = a[sortColumn];
-      const bValue = b[sortColumn];
+  const filteredAndSortedData = useMemo(() => {
+    let result = [...data];
 
-      if (aValue < bValue) return sortDirection === "asc" ? -1 : 1;
-      if (aValue > bValue) return sortDirection === "asc" ? 1 : -1;
-      return 0;
+    // Apply filters
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value) {
+        result = result.filter(item =>
+          String(item[key as keyof T]).toLowerCase().includes(value.toLowerCase())
+        );
+      }
     });
-  }, [data, sortColumn, sortDirection]);
+
+    // Apply sorting
+    if (sortColumn) {
+      result.sort((a, b) => {
+        const aValue = a[sortColumn];
+        const bValue = b[sortColumn];
+
+        if (aValue < bValue) return sortDirection === "asc" ? -1 : 1;
+        if (aValue > bValue) return sortDirection === "asc" ? 1 : -1;
+        return 0;
+      });
+    }
+
+    return result;
+  }, [data, filters, sortColumn, sortDirection]);
 
   return (
     <>
+      <div className="mb-4 flex flex-wrap gap-4">
+        {columns.map(column => {
+          if (column.filterable) {
+            if (column.filterType === 'select' && column.filterOptions) {
+              return (
+                <Select
+                  key={String(column.accessor)}
+                  value={filters[column.accessor as string] || undefined}
+                  onValueChange={(value) => handleFilterChange(column.accessor, value)}
+                >
+                  <SelectTrigger className="max-w-xs">
+                    <SelectValue placeholder="Tous" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {column.filterOptions.map(option => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              );
+            } else {
+              return (
+                <Input
+                  key={String(column.accessor)}
+                  placeholder={`Filtrer par ${column.header.toLowerCase()}`}
+                  value={filters[column.accessor as string] || ''}
+                  onChange={(e) => handleFilterChange(column.accessor, e.target.value)}
+                  className="max-w-xs"
+                />
+              );
+            }
+          }
+          return null;
+        })}
+      </div>
       <UITable>
         <TableHeader>
           <TableRow>
@@ -103,7 +164,7 @@ function Table<T>({
               </TableCell>
             </TableRow>
           ) : (
-            sortedData.map((item, rowIndex) => (
+            filteredAndSortedData.map((item, rowIndex) => (
               <TableRow
                 key={rowIndex}
                 className={`${
