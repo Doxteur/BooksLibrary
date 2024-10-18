@@ -33,7 +33,12 @@ MYSQL_USER=root
 MYSQL_PASSWORD=root
 MYSQL_DB_NAME=ynovLivres
 
-## Migration Serveur
+## Migration Serveur BDD
 
 1. Run `cd server`
-2. Run `node ace migration:run --seed`
+2. Run `node ace migration:fresh --seed`
+
+## Utilisateur Admin
+
+- Email: admin@admin.com
+- Mot de passe: admin
